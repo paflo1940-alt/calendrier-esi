@@ -1,0 +1,624 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#0f172a" />
+<title>Mon calendrier ESI — 2026/2027</title>
+<style>
+  :root{
+    --bg:#f6f8fc;
+    --surface:#ffffff;
+    --surface-2:#f8fafc;
+    --text:#0f172a;
+    --muted:#64748b;
+    --line:#e2e8f0;
+    --shadow:0 14px 40px rgba(15,23,42,.08);
+    --radius:20px;
+    --slot-h:74px;
+
+    --alg:#7c3aed;
+    --dev3:#2563eb;
+    --exp:#0891b2;
+    --ana:#ea580c;
+    --dev5:#db2777;
+    --don:#16a34a;
+    --ges:#ca8a04;
+    --sec:#dc2626;
+    --web:#4f46e5;
+  }
+
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0;
+    font-family:Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    color:var(--text);
+    background:
+      radial-gradient(circle at 10% 0%, rgba(79,70,229,.08), transparent 32%),
+      radial-gradient(circle at 90% 10%, rgba(14,165,233,.08), transparent 30%),
+      var(--bg);
+  }
+
+  button,input,select{font:inherit}
+  button{cursor:pointer}
+
+  .app{
+    width:min(1480px, 100%);
+    margin:auto;
+    padding:20px;
+  }
+
+  .topbar{
+    display:flex;
+    gap:16px;
+    justify-content:space-between;
+    align-items:flex-start;
+    margin-bottom:18px;
+  }
+
+  .eyebrow{
+    margin:0 0 6px;
+    color:#4f46e5;
+    font-weight:800;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    font-size:.78rem;
+  }
+
+  h1{
+    margin:0;
+    font-size:clamp(1.65rem, 3vw, 2.45rem);
+    line-height:1.05;
+    letter-spacing:-.04em;
+  }
+
+  .subtitle{
+    margin:8px 0 0;
+    color:var(--muted);
+    font-size:.96rem;
+  }
+
+  .actions{
+    display:flex;
+    flex-wrap:wrap;
+    gap:9px;
+    justify-content:flex-end;
+  }
+
+  .btn{
+    border:1px solid var(--line);
+    border-radius:12px;
+    background:var(--surface);
+    padding:10px 13px;
+    color:var(--text);
+    font-weight:750;
+    box-shadow:0 2px 7px rgba(15,23,42,.04);
+  }
+  .btn:hover{transform:translateY(-1px)}
+  .btn.primary{
+    background:#0f172a;
+    border-color:#0f172a;
+    color:#fff;
+  }
+  .btn.danger{color:#b91c1c}
+
+  .summary{
+    display:grid;
+    grid-template-columns:repeat(4, minmax(0,1fr));
+    gap:10px;
+    margin-bottom:18px;
+  }
+  .stat{
+    background:rgba(255,255,255,.85);
+    border:1px solid rgba(226,232,240,.9);
+    border-radius:16px;
+    padding:14px;
+    box-shadow:0 8px 25px rgba(15,23,42,.04);
+  }
+  .stat strong{display:block;font-size:1.2rem}
+  .stat span{color:var(--muted);font-size:.82rem}
+
+  .filters{
+    display:flex;
+    gap:8px;
+    overflow:auto;
+    padding-bottom:10px;
+    scrollbar-width:thin;
+  }
+  .chip{
+    white-space:nowrap;
+    border:1px solid var(--line);
+    background:var(--surface);
+    color:var(--muted);
+    border-radius:999px;
+    padding:8px 11px;
+    font-weight:750;
+    font-size:.84rem;
+  }
+  .chip.active{
+    color:#fff;
+    background:#0f172a;
+    border-color:#0f172a;
+  }
+
+  .calendar-shell{
+    background:rgba(255,255,255,.82);
+    border:1px solid rgba(226,232,240,.9);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    overflow:hidden;
+    backdrop-filter:blur(10px);
+  }
+
+  .week-head{
+    display:grid;
+    grid-template-columns:72px repeat(5, minmax(160px,1fr));
+    border-bottom:1px solid var(--line);
+    background:rgba(248,250,252,.88);
+  }
+  .week-head .corner{border-right:1px solid var(--line)}
+  .day-head{
+    padding:14px 12px;
+    border-right:1px solid var(--line);
+  }
+  .day-head:last-child{border-right:0}
+  .day-name{font-weight:850}
+  .day-date{font-size:.78rem;color:var(--muted);margin-top:2px}
+
+  .week-grid{
+    display:grid;
+    grid-template-columns:72px repeat(5, minmax(160px,1fr));
+    min-width:900px;
+  }
+  .time-col,.day-col{position:relative}
+  .time-col{
+    background:rgba(248,250,252,.72);
+    border-right:1px solid var(--line);
+  }
+  .time-label{
+    height:var(--slot-h);
+    display:flex;
+    align-items:flex-start;
+    justify-content:center;
+    padding-top:8px;
+    color:var(--muted);
+    font-size:.78rem;
+    font-weight:700;
+    border-bottom:1px dashed var(--line);
+  }
+
+  .day-col{
+    min-height:calc(var(--slot-h) * 5);
+    border-right:1px solid var(--line);
+  }
+  .day-col:last-child{border-right:0}
+  .slot-bg{
+    height:var(--slot-h);
+    border-bottom:1px dashed var(--line);
+  }
+
+  .event-layer{
+    position:absolute;
+    inset:0;
+    pointer-events:none;
+  }
+  .event{
+    position:absolute;
+    left:7px;
+    right:7px;
+    top:calc(var(--slot-index) * var(--slot-h) + 6px);
+    height:calc(var(--slot-h) - 12px);
+    padding:9px 10px;
+    border-radius:14px;
+    color:#fff;
+    overflow:hidden;
+    box-shadow:0 6px 16px rgba(15,23,42,.13);
+    pointer-events:auto;
+    transition:.16s ease;
+    border:1px solid rgba(255,255,255,.25);
+  }
+  .event:hover{transform:translateY(-2px); box-shadow:0 10px 22px rgba(15,23,42,.17)}
+  .event.hidden{display:none}
+  .event .top{
+    display:flex;
+    gap:8px;
+    align-items:center;
+    justify-content:space-between;
+  }
+  .event .ue{font-weight:900;font-size:.88rem}
+  .event .time{font-size:.72rem;opacity:.9;font-weight:700}
+  .event .meta{
+    margin-top:5px;
+    font-size:.74rem;
+    opacity:.9;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .event .edit{
+    margin-top:5px;
+    font-size:.68rem;
+    opacity:.82;
+  }
+
+  [data-ue="3ALG3A"]{background:linear-gradient(135deg,var(--alg),#6d28d9)}
+  [data-ue="3DEV3A"]{background:linear-gradient(135deg,var(--dev3),#1d4ed8)}
+  [data-ue="3EXP2A"]{background:linear-gradient(135deg,var(--exp),#0e7490)}
+  [data-ue="5ANA1D"]{background:linear-gradient(135deg,var(--ana),#c2410c)}
+  [data-ue="5DEV5DR"]{background:linear-gradient(135deg,var(--dev5),#be185d)}
+  [data-ue="5DON4D"]{background:linear-gradient(135deg,var(--don),#15803d)}
+  [data-ue="5GES3D"]{background:linear-gradient(135deg,var(--ges),#a16207)}
+  [data-ue="5SEC1A"]{background:linear-gradient(135deg,var(--sec),#b91c1c)}
+  [data-ue="5WEB4D"]{background:linear-gradient(135deg,var(--web),#4338ca)}
+
+  .mobile-list{display:none}
+  .mobile-day{margin-bottom:18px}
+  .mobile-day h2{font-size:1rem;margin:0 0 8px}
+  .mobile-card{
+    color:#fff;
+    border-radius:16px;
+    padding:13px;
+    margin-bottom:9px;
+    box-shadow:0 9px 24px rgba(15,23,42,.10);
+  }
+  .mobile-card.hidden{display:none}
+  .mobile-card .row{
+    display:flex;justify-content:space-between;gap:10px;align-items:center
+  }
+  .mobile-card strong{font-size:.95rem}
+  .mobile-card .meta{margin-top:6px;font-size:.8rem;opacity:.9}
+
+  .note{
+    margin-top:14px;
+    color:var(--muted);
+    font-size:.8rem;
+    text-align:center;
+  }
+
+  dialog{
+    width:min(520px, calc(100% - 28px));
+    border:0;
+    border-radius:20px;
+    padding:0;
+    box-shadow:0 30px 80px rgba(15,23,42,.25);
+  }
+  dialog::backdrop{background:rgba(15,23,42,.55);backdrop-filter:blur(4px)}
+  .dialog-body{padding:20px}
+  .dialog-body h3{margin:0 0 14px}
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .field{display:flex;flex-direction:column;gap:5px}
+  .field.full{grid-column:1/-1}
+  label{font-size:.78rem;font-weight:800;color:var(--muted)}
+  input,select{
+    width:100%;
+    border:1px solid var(--line);
+    border-radius:11px;
+    padding:10px 11px;
+    background:#fff;
+    color:var(--text);
+  }
+  .dialog-actions{display:flex;justify-content:space-between;gap:10px;margin-top:16px}
+  .dialog-actions .right{display:flex;gap:8px}
+
+  @media (max-width: 860px){
+    .app{padding:14px}
+    .topbar{display:block}
+    .actions{justify-content:flex-start;margin-top:14px}
+    .summary{grid-template-columns:repeat(2,1fr)}
+    .calendar-shell{display:none}
+    .mobile-list{display:block}
+    .mobile-card{cursor:pointer}
+    .subtitle{font-size:.9rem}
+  }
+
+  @media (max-width: 520px){
+    .summary{grid-template-columns:1fr 1fr}
+    .stat{padding:11px}
+    .stat strong{font-size:1.05rem}
+    .btn{padding:9px 11px;font-size:.85rem}
+    .form-grid{grid-template-columns:1fr}
+    .field.full{grid-column:auto}
+  }
+
+  @media print{
+    body{background:#fff}
+    .actions,.filters,.note{display:none!important}
+    .app{padding:0}
+    .calendar-shell{display:block!important;box-shadow:none;border:0}
+    .mobile-list{display:none!important}
+    .week-grid,.week-head{min-width:0}
+    .week-head{grid-template-columns:58px repeat(5,1fr)}
+    .week-grid{grid-template-columns:58px repeat(5,1fr)}
+    .event{font-size:8px;padding:5px}
+    .event .edit{display:none}
+  }
+</style>
+
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="apple-touch-icon" href="./icons/icon-192.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div>
+      <p class="eyebrow">HE2B ESI • PAE 2026–2027</p>
+      <h1>Mon emploi du temps</h1>
+      <p class="subtitle">9 UE • 6ETE1A volontairement exclue • horaires modifiables et sauvegardés sur cet appareil.</p>
+    </div>
+    <div class="actions">
+      <button class="btn" id="printBtn">Imprimer / PDF</button>
+      <button class="btn" id="resetBtn">Réinitialiser</button>
+      <button class="btn primary" id="addBtn">+ Ajouter un cours</button>
+    </div>
+  </header>
+
+  <section class="summary">
+    <div class="stat"><strong id="courseCount">15</strong><span>séances / semaine</span></div>
+    <div class="stat"><strong>30 h</strong><span>cours affichés</span></div>
+    <div class="stat"><strong>9</strong><span>UE</span></div>
+    <div class="stat"><strong>5</strong><span>jours</span></div>
+  </section>
+
+  <div class="filters" id="filters"></div>
+
+  <section class="calendar-shell">
+    <div class="week-head">
+      <div class="corner"></div>
+      <div class="day-head"><div class="day-name">Lundi</div><div class="day-date">14 sept.</div></div>
+      <div class="day-head"><div class="day-name">Mardi</div><div class="day-date">15 sept.</div></div>
+      <div class="day-head"><div class="day-name">Mercredi</div><div class="day-date">16 sept.</div></div>
+      <div class="day-head"><div class="day-name">Jeudi</div><div class="day-date">17 sept.</div></div>
+      <div class="day-head"><div class="day-name">Vendredi</div><div class="day-date">18 sept.</div></div>
+    </div>
+    <div class="week-grid">
+      <div class="time-col">
+        <div class="time-label">08:15</div>
+        <div class="time-label">10:30</div>
+        <div class="time-label">13:45</div>
+        <div class="time-label">16:00</div>
+        <div class="time-label">18:00</div>
+      </div>
+      <div class="day-col" data-day="0"></div>
+      <div class="day-col" data-day="1"></div>
+      <div class="day-col" data-day="2"></div>
+      <div class="day-col" data-day="3"></div>
+      <div class="day-col" data-day="4"></div>
+    </div>
+  </section>
+
+  <section class="mobile-list" id="mobileList"></section>
+  <p class="note">Touchez / cliquez sur un cours pour le modifier ou le supprimer. Les modifications sont gardées dans le navigateur via localStorage.</p>
+</div>
+
+<dialog id="editor">
+  <form method="dialog" class="dialog-body" id="editorForm">
+    <h3 id="editorTitle">Modifier le cours</h3>
+    <div class="form-grid">
+      <div class="field">
+        <label>UE</label>
+        <select id="ueInput"></select>
+      </div>
+      <div class="field">
+        <label>Jour</label>
+        <select id="dayInput">
+          <option value="0">Lundi</option><option value="1">Mardi</option>
+          <option value="2">Mercredi</option><option value="3">Jeudi</option>
+          <option value="4">Vendredi</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Début</label>
+        <select id="timeInput">
+          <option>08:15</option><option>10:30</option><option>13:45</option><option>16:00</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Fin</label>
+        <select id="endInput">
+          <option>10:15</option><option>12:30</option><option>15:45</option><option>18:00</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Type / suffixe</label>
+        <input id="typeInput" placeholder="ex. T, L, ORG, DRT" />
+      </div>
+      <div class="field">
+        <label>Groupe</label>
+        <input id="groupInput" placeholder="ex. E122" />
+      </div>
+      <div class="field">
+        <label>Prof</label>
+        <input id="teacherInput" placeholder="ex. MSA" />
+      </div>
+      <div class="field">
+        <label>Local</label>
+        <input id="roomInput" placeholder="ex. 403" />
+      </div>
+    </div>
+    <div class="dialog-actions">
+      <button type="button" class="btn danger" id="deleteBtn">Supprimer</button>
+      <div class="right">
+        <button type="button" class="btn" id="cancelBtn">Annuler</button>
+        <button type="submit" class="btn primary">Enregistrer</button>
+      </div>
+    </div>
+  </form>
+</dialog>
+
+<script>
+const UE_LIST = ["3ALG3A","3DEV3A","3EXP2A","5ANA1D","5DEV5DR","5DON4D","5GES3D","5SEC1A","5WEB4D"];
+const DEFAULT_EVENTS = [
+  {id:"don-lu-am",day:0,start:"08:15",end:"10:15",ue:"5DON4D",type:"",group:"E122",teacher:"SDR",room:"504"},
+  {id:"ana-lu",day:0,start:"10:30",end:"12:30",ue:"5ANA1D",type:"T",group:"E122",teacher:"CLG",room:"003"},
+  {id:"web-lu",day:0,start:"13:45",end:"15:45",ue:"5WEB4D",type:"",group:"E122",teacher:"TNI",room:"405"},
+  {id:"don-lu-pm",day:0,start:"16:00",end:"18:00",ue:"5DON4D",type:"T",group:"E122",teacher:"SDR",room:"003"},
+
+  {id:"alg-ma",day:1,start:"10:30",end:"12:30",ue:"3ALG3A",type:"",group:"C222",teacher:"MSA",room:"101"},
+  {id:"dev5-ma",day:1,start:"16:00",end:"18:00",ue:"5DEV5DR",type:"",group:"E221",teacher:"NRI",room:"405"},
+
+  {id:"exp-me",day:2,start:"08:15",end:"10:15",ue:"3EXP2A",type:"",group:"C122",teacher:"MBA",room:"304"},
+  {id:"dev3-me",day:2,start:"10:30",end:"12:30",ue:"3DEV3A",type:"",group:"C122",teacher:"MSA",room:"403"},
+  {id:"sec-me",day:2,start:"16:00",end:"18:00",ue:"5SEC1A",type:"T",group:"E122",teacher:"ABS",room:"004"},
+
+  {id:"ges-je",day:3,start:"08:15",end:"10:15",ue:"5GES3D",type:"ORG",group:"E111",teacher:"BCH",room:"105"},
+  {id:"ana-je",day:3,start:"10:30",end:"12:30",ue:"5ANA1D",type:"L",group:"E122",teacher:"CLG",room:"201"},
+  {id:"sec-je",day:3,start:"13:45",end:"15:45",ue:"5SEC1A",type:"L",group:"E122",teacher:"TNI",room:"202"},
+  {id:"dev5-je",day:3,start:"16:00",end:"18:00",ue:"5DEV5DR",type:"",group:"E221",teacher:"NRI",room:"203"},
+
+  {id:"ges-ve",day:4,start:"08:15",end:"10:15",ue:"5GES3D",type:"DRT",group:"E111",teacher:"VRU",room:"003"},
+  {id:"dev3-ve",day:4,start:"10:30",end:"12:30",ue:"3DEV3A",type:"",group:"C122",teacher:"MSA",room:"404"},
+  {id:"web-ve",day:4,start:"13:45",end:"15:45",ue:"5WEB4D",type:"",group:"E122",teacher:"TNI",room:"304"},
+  {id:"exp-ve",day:4,start:"16:00",end:"18:00",ue:"3EXP2A",type:"",group:"C122",teacher:"MBA",room:"003"}
+];
+
+const SLOT_INDEX = {"08:15":0,"10:30":1,"13:45":2,"16:00":3};
+const DAY_NAMES = ["Lundi","Mardi","Mercredi","Jeudi","Vendredi"];
+let events = JSON.parse(localStorage.getItem("esiScheduleV1") || "null") || structuredClone(DEFAULT_EVENTS);
+let activeFilter = "ALL";
+let editingId = null;
+
+const $ = s => document.querySelector(s);
+const editor = $("#editor");
+
+function save(){ localStorage.setItem("esiScheduleV1", JSON.stringify(events)); }
+
+function label(ev){ return ev.ue + (ev.type ? " · " + ev.type : ""); }
+function meta(ev){ return [ev.group, ev.teacher, ev.room && "Local " + ev.room].filter(Boolean).join(" • "); }
+
+function renderFilters(){
+  const el = $("#filters");
+  el.innerHTML = "";
+  ["ALL",...UE_LIST].forEach(ue=>{
+    const b=document.createElement("button");
+    b.className="chip"+(activeFilter===ue?" active":"");
+    b.textContent=ue==="ALL"?"Toutes les UE":ue;
+    b.onclick=()=>{activeFilter=ue; render();};
+    el.appendChild(b);
+  });
+}
+
+function renderDesktop(){
+  document.querySelectorAll(".day-col").forEach(col=>{
+    col.innerHTML = '<div class="slot-bg"></div>'.repeat(5) + '<div class="event-layer"></div>';
+  });
+
+  events.forEach(ev=>{
+    const layer=document.querySelector(`.day-col[data-day="${ev.day}"] .event-layer`);
+    const card=document.createElement("div");
+    card.className="event"+((activeFilter!=="ALL"&&activeFilter!==ev.ue)?" hidden":"");
+    card.dataset.ue=ev.ue;
+    card.style.setProperty("--slot-index", SLOT_INDEX[ev.start] ?? 0);
+    card.innerHTML=`<div class="top"><span class="ue">${label(ev)}</span><span class="time">${ev.start}–${ev.end}</span></div>
+                    <div class="meta">${meta(ev)}</div>
+                    <div class="edit">Cliquer pour modifier</div>`;
+    card.onclick=()=>openEditor(ev.id);
+    layer.appendChild(card);
+  });
+}
+
+function renderMobile(){
+  const wrap=$("#mobileList");
+  wrap.innerHTML="";
+  DAY_NAMES.forEach((name,day)=>{
+    const dayEvents=events.filter(e=>e.day===day).sort((a,b)=>a.start.localeCompare(b.start));
+    const sec=document.createElement("div");
+    sec.className="mobile-day";
+    sec.innerHTML=`<h2>${name}</h2>`;
+    dayEvents.forEach(ev=>{
+      const card=document.createElement("div");
+      card.className="mobile-card"+((activeFilter!=="ALL"&&activeFilter!==ev.ue)?" hidden":"");
+      card.dataset.ue=ev.ue;
+      card.innerHTML=`<div class="row"><strong>${label(ev)}</strong><span>${ev.start}–${ev.end}</span></div><div class="meta">${meta(ev)}</div>`;
+      card.onclick=()=>openEditor(ev.id);
+      sec.appendChild(card);
+    });
+    wrap.appendChild(sec);
+  });
+}
+
+function renderStats(){
+  $("#courseCount").textContent=events.length;
+  const hours = events.reduce((sum,e)=>{
+    const [sh,sm]=e.start.split(":").map(Number), [eh,em]=e.end.split(":").map(Number);
+    return sum + ((eh*60+em)-(sh*60+sm))/60;
+  },0);
+  document.querySelectorAll(".stat strong")[1].textContent = (Number.isInteger(hours)?hours:hours.toFixed(1))+" h";
+}
+
+function render(){
+  renderFilters(); renderDesktop(); renderMobile(); renderStats();
+}
+
+function populateUE(){
+  $("#ueInput").innerHTML=UE_LIST.map(x=>`<option value="${x}">${x}</option>`).join("");
+}
+
+function openEditor(id=null){
+  editingId=id;
+  const ev=id?events.find(e=>e.id===id):{day:0,start:"08:15",end:"10:15",ue:"3ALG3A",type:"",group:"",teacher:"",room:""};
+  $("#editorTitle").textContent=id?"Modifier le cours":"Ajouter un cours";
+  $("#ueInput").value=ev.ue;
+  $("#dayInput").value=ev.day;
+  $("#timeInput").value=ev.start;
+  $("#endInput").value=ev.end;
+  $("#typeInput").value=ev.type||"";
+  $("#groupInput").value=ev.group||"";
+  $("#teacherInput").value=ev.teacher||"";
+  $("#roomInput").value=ev.room||"";
+  $("#deleteBtn").style.visibility=id?"visible":"hidden";
+  editor.showModal();
+}
+
+$("#editorForm").addEventListener("submit",e=>{
+  e.preventDefault();
+  const data={
+    id:editingId||("custom-"+Date.now()),
+    ue:$("#ueInput").value,
+    day:+$("#dayInput").value,
+    start:$("#timeInput").value,
+    end:$("#endInput").value,
+    type:$("#typeInput").value.trim(),
+    group:$("#groupInput").value.trim(),
+    teacher:$("#teacherInput").value.trim(),
+    room:$("#roomInput").value.trim()
+  };
+  if(editingId) events=events.map(e=>e.id===editingId?data:e);
+  else events.push(data);
+  save(); render(); editor.close();
+});
+
+$("#deleteBtn").onclick=()=>{
+  if(editingId && confirm("Supprimer ce cours ?")){
+    events=events.filter(e=>e.id!==editingId);
+    save(); render(); editor.close();
+  }
+};
+$("#cancelBtn").onclick=()=>editor.close();
+$("#addBtn").onclick=()=>openEditor();
+$("#printBtn").onclick=()=>window.print();
+$("#resetBtn").onclick=()=>{
+  if(confirm("Revenir à l'emploi du temps d'origine ?")){
+    events=structuredClone(DEFAULT_EVENTS);
+    save(); activeFilter="ALL"; render();
+  }
+};
+
+populateUE();
+render();
+</script>
+
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./sw.js").catch(console.error);
+  });
+}
+</script>
+
+</body>
+</html>
